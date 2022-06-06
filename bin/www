@@ -10,7 +10,7 @@ var express = require('express');
 
 var app = require('../app');
 var debug = require('debug')('chat-server:server');
-var http = require('http');
+var https = require('https');
 
 require('dotenv').config(); // tells node.js to read from the .env file
 
@@ -42,7 +42,7 @@ app.set('port', port);
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+var server = https.createServer(app);
 var io = socketio(server,{
   cors: {
     origin: '*',
