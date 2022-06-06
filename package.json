@@ -2,13 +2,14 @@
   "name": "server",
   "version": "0.0.0",
   "scripts": {
-    "server":"npm start",
-    "client":"npm start --prefix client",
+    "server": "npm start",
+    "client": "npm start --prefix client",
     "start": "node ./bin/www",
-    "dev":"concurrently \"npm run server\" \"npm run client\"",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "heroku-postbuild": "cd client && npm install && npm run build"
   },
   "dependencies": {
+    "concurrently": "^7.2.1",
     "cookie-parser": "~1.4.4",
     "cors": "2.8.5",
     "debug": "~2.6.9",
