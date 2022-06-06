@@ -2,10 +2,7 @@
   "name": "server",
   "version": "0.0.0",
   "scripts": {
-    "server": "npm start",
-    "client": "npm start --prefix client",
     "start": "node ./bin/www",
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
     "heroku-postbuild": "cd client && npm install && npm run build"
   },
   "dependencies": {

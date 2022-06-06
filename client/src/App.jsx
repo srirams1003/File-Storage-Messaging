@@ -14,7 +14,7 @@ const handleLogin = async googleData => {
     return;
   }
 
-  const res = await fetch("/api/store_id_token", {
+  const res = await fetch("/store_id_token", {
     method: "POST",
     body: JSON.stringify({
       token: googleData.credential
@@ -33,7 +33,7 @@ const handleLogin = async googleData => {
 
 
 async function performLogout(){
-  const res = await fetch("/api/google-logout", {
+  const res = await fetch("/google-logout", {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json"
@@ -46,7 +46,7 @@ async function performLogout(){
 }
 
 async function identifyCurrentUser(){
-  const res = await fetch("/api/me", {
+  const res = await fetch("/me", {
     method: "GET",
     headers: {
       "Content-Type": "application/json"
@@ -67,7 +67,7 @@ function App() {
   const [name, setName] = useState(null);
 
   React.useEffect(() => { // making an api call to see who is currently logged in
-    fetch("/api/me")
+    fetch("/me")
         .then((res) => res.json())
         .then((data) => {
           if (data.message === "No user logged in!"){
