@@ -85,7 +85,7 @@ function App() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const newSocket = io(`http://${window.location.hostname}:6005`);
+    const newSocket = io(`https://${window.location.hostname}:6005`);
     setSocket(newSocket);
     return () => newSocket.close();
   }, [setSocket, name]);
