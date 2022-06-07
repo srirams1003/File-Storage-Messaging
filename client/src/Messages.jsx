@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import './Messages.css';
 
 function Messages({ socket }) {
-  let name = socket.name;
-  socket = socket.socket;
   const [messages, setMessages] = useState({});
 
   useEffect(() => {
@@ -43,9 +41,9 @@ function Messages({ socket }) {
             className="message-container"
             title={`Sent at ${new Date(message.time).toLocaleTimeString()}`}
           >
-            <span className="user">{message.value[0] == null ? "Anonymous" : message.value[0]}:</span>
-            <span className="message">{message.value[1]}</span>
-            <span className="date">{new Date(message.time).toLocaleTimeString()}</span>
+            <span className="display-things user">{message.value[0] == null ? "Anon E. Moose" : message.value[0]}:</span>
+            <span className="display-things message">{message.value[1]}</span>
+            <span className="display-things date">{new Date(message.time).toLocaleTimeString()}</span>
           </div>
         ))
       }

@@ -1,28 +1,40 @@
 .message-list {
-    /* max-width: 500px; */
-    width: 100%;
+  /* max-width: 500px; */
+  width: 100%;
+}
+
+.message-container {
+  display: flex;
+  flex-direction: row;
+  padding: 0.5rem;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.user, .date {
+  font-size: 0.625rem;
+  color: #888888;
+  font-size: 16px;
+  min-width: 120px;
+}
+
+/* .user {
+  width: 120px;
+} */
+
+.message {
+  flex-grow: 1;
+  margin-right: 20px;
+  font-size: 22px;
+}
+
+.display-things {
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+
+@media only screen and (max-width: 650px) {
+  .display-things {
+    font-size: 14px;
+
   }
-  
-  .message-container {
-    display: flex;
-    flex-direction: row;
-    padding: 0.5rem;
-    border-bottom: 1px solid #eeeeee;
-  }
-  
-  .user, .date {
-    font-size: 0.625rem;
-    color: #888888;
-    font-size: 16px;
-    width: 120px;
-  }
-  
-  /* .user {
-    width: 120px;
-  } */
-  
-  .message {
-    flex-grow: 1;
-    margin-right: 20px;
-    font-size: 22px;
-  }
+}

@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import './MessageInput.css';
 
 const NewMessage = ({socket}) => {
-  const [data, setData] = React.useState(null);
   const [name, setName] = useState(null);
 
   React.useEffect(() => { // making an api call to see who is currently logged in
@@ -10,10 +9,9 @@ const NewMessage = ({socket}) => {
         .then((res) => res.json())
         .then((data) => {
           if (data.message === "No user logged in!"){
-            setData(null);
+            setName(null);
           }
           else{
-            setData(data);
             setName(data.name);
           }
         });
@@ -25,8 +23,10 @@ const NewMessage = ({socket}) => {
   const submitForm = (e) => {
     e.preventDefault();
     // console.log("Value:", value);
-    socket.emit('message', [name, value]);
-    setValue('');
+    if (value.trim().length > 0){ // this condition makes sure the input message is not empty
+      socket.emit('message', [name, value]);
+      setValue('');
+    }
   };
 
   return (

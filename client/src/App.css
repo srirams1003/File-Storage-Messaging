@@ -68,3 +68,9 @@ main {
     /* font-size: 22px; */
     display: flex;
 }
+
+@media only screen and (max-width: 650px) {
+    main {
+        font-size: 14px;
+    }   
+}
