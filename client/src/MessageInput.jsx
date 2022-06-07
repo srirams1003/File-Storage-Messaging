@@ -6,7 +6,7 @@ const NewMessage = ({socket}) => {
   const [name, setName] = useState(null);
 
   React.useEffect(() => { // making an api call to see who is currently logged in
-    fetch("/me")
+    fetch("/api/me")
         .then((res) => res.json())
         .then((data) => {
           if (data.message === "No user logged in!"){

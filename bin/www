@@ -3,239 +3,240 @@
 /**
  * Module dependencies.
  */
-var chat = require('../chat');
-var socketio = require('socket.io');
-const path = require("path");
-var express = require('express');
-
-var app = require('../app');
-var debug = require('debug')('chat-server:server');
-var http = require('http');
-
-require('dotenv').config(); // tells node.js to read from the .env file
-
-let session = require('express-session'); // used to manage sessions and cookies
-
-const MongoClient = require('mongodb').MongoClient;
-
-const { OAuth2Client } = require('google-auth-library');
-
-const {v4 : uuidv4} = require('uuid');
-
-let mongodb_connection_string = process.env.MONGO_CONNECTION_STRING; // saving as a permanent environment variable for security
-app.use(session({
-    secret: uuidv4(), // use UUIDs for session secrets?
-    resave: true,
-    saveUninitialized: true,
-    cookie: { maxAge: 31536000 } // if you do not set a value here, the cookie lasts for a session. since we want persistent storage, we set it to be some large amount of time.
-}));
-  
-
-/**
- * Get port from environment and store in Express.
- */
-
-var port = normalizePort(process.env.PORT || '6005');
-app.set('port', port);
-
-/**
- * Create HTTP server.
- */
-
-var server = http.createServer(app);
-var io = socketio(server,{
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  }
-});
-chat(io);
-
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-server.listen(port);
-server.on('error', onError);
-server.on('listening', onListening);
-
-/**
- * Normalize a port into a number, string, or false.
- */
-
-function normalizePort(val) {
-  var port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
-}
-
-/**
- * Event listener for HTTP server "error" event.
- */
-
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-
-function onListening() {
-  var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
-}
-
-app.use(
-  express.static(path.join(__dirname, "../client/dist"))
-);
-
-
-MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then((client)=>{
-
-  console.log("Connected to the database");
-  const db = client.db("leaseFinderDB");
-  const users_collection = db.collection('users_collection');
-  const test_collection = db.collection('test_collection');
-
-  app.use(async (req, res, next) => {
-    console.log("Server received a request at middleware");
-    users_collection.find({ email:  req.session.email }).toArray().then((users)=>{
-      // console.log("This is from the middleware function", users);
-      if (users[0] === undefined){
-        req.user = -1;
-      }
-      else{
-        req.user = users[0];
-      }
-      // console.log("req.user: ", req.user);
-      next();
-    })
-    .catch(error => {
-      console.error(error);
-      res.send(error);
-    });
-
-  });
-
-  app.get("/me", async (req, res) => { // api call to get current user
-    console.log("Server received a request at ", req.url);
-    // console.log("THIS IS ME:", req.user);
-    if (req.user === -1){
-      res.status(200);
-      res.json({"message":"No user logged in!"});
-    }
-    else{
-      res.status(200);
-      res.json(req.user);
-    }
-
-  });
-
-  app.delete("/google-logout", async (req, res) => {
-    console.log("Server received a request at ", req.url);
-    if (req.user === -1){
-      res.status(200);
-      res.json({"message":"No user logged in!"});
-    }
-    else{
-      await req.session.destroy();
-      res.status(200);
-      res.json({
-        message: "Logged out successfully"
-      });
-    }
-  });
-
-
-  app.post("/store_id_token", async (req, res) => {
-
-    console.log("Server recieved a request at ", req.url);
-
-    const { token }  = req.body;
-    const client = new OAuth2Client(process.env.CLIENT_ID);
-    const ticket = await client.verifyIdToken({
-      idToken: token,
-      audience: process.env.CLIENT_ID,
-      plugin_name:'MessagingApp'
-    });
-    const { name, email, picture } = ticket.getPayload();
-
-    let to_update = {name, email, picture};
-
-    const user = await users_collection.replaceOne({"email":email}, to_update, {upsert:true}); // using email as the unique identifier
-
-    req.session.email = email; // since email is the only unique identifier
-
-    console.log("req.session.email:", req.session.email);
-
-    res.status(201);
-    res.json(user);
-  });
-
-
-
-  app.post("/demo_db_entry", (request, response)=>{
-    console.log("Server recieved a request at ", request.url);
-
-    console.log(request.body);
-
-    test_collection.insertOne(request.body).then((result)=>{
-      console.log(result);
-      response.send(result);
-    }).catch((error)=>{
-      console.error(error);
-      response.send(error);
-    });
-
-  });
-
-  app.get("/sampleCall", (request, response)=>{
-    console.log("Got request at: " + request.url);
-    response.send({message: "Hi client!"});
-  });
-
-  app.get("*", (req, res) => {
-    res.sendFile(
-      path.join(__dirname, "../client/dist/index.html")
-    );
-  });
-
-}).catch((error)=>{ // CATCH BLOCK FOR MONGO CONNECTION
-  console.error(error);
-});
-
+ var chat = require('../chat');
+ var socketio = require('socket.io');
+ const path = require("path");
+ var express = require('express');
+ 
+ var app = require('../app');
+ var debug = require('debug')('chat-server:server');
+ var http = require('http');
+ 
+ require('dotenv').config(); // tells node.js to read from the .env file
+ 
+ let session = require('express-session'); // used to manage sessions and cookies
+ 
+ const MongoClient = require('mongodb').MongoClient;
+ 
+ const { OAuth2Client } = require('google-auth-library');
+ 
+ const {v4 : uuidv4} = require('uuid');
+ 
+ let mongodb_connection_string = process.env.MONGO_CONNECTION_STRING; // saving as a permanent environment variable for security
+ app.use(session({
+     secret: uuidv4(), // use UUIDs for session secrets?
+     resave: true,
+     saveUninitialized: true,
+     cookie: { maxAge: 31536000 } // if you do not set a value here, the cookie lasts for a session. since we want persistent storage, we set it to be some large amount of time.
+ }));
+   
+ 
+ /**
+  * Get port from environment and store in Express.
+  */
+ 
+ var port = normalizePort(process.env.PORT || '6005');
+ app.set('port', port);
+ 
+ /**
+  * Create HTTP server.
+  */
+ 
+ var server = http.createServer(app);
+ var io = socketio(server,{
+   cors: {
+     origin: '*',
+     methods: ['GET', 'POST']
+   }
+ });
+ chat(io);
+ 
+ 
+ /**
+  * Listen on provided port, on all network interfaces.
+  */
+ 
+ server.listen(port);
+ server.on('error', onError);
+ server.on('listening', onListening);
+ 
+ /**
+  * Normalize a port into a number, string, or false.
+  */
+ 
+ function normalizePort(val) {
+   var port = parseInt(val, 10);
+ 
+   if (isNaN(port)) {
+     // named pipe
+     return val;
+   }
+ 
+   if (port >= 0) {
+     // port number
+     return port;
+   }
+ 
+   return false;
+ }
+ 
+ /**
+  * Event listener for HTTP server "error" event.
+  */
+ 
+ function onError(error) {
+   if (error.syscall !== 'listen') {
+     throw error;
+   }
+ 
+   var bind = typeof port === 'string'
+     ? 'Pipe ' + port
+     : 'Port ' + port;
+ 
+   // handle specific listen errors with friendly messages
+   switch (error.code) {
+     case 'EACCES':
+       console.error(bind + ' requires elevated privileges');
+       process.exit(1);
+       break;
+     case 'EADDRINUSE':
+       console.error(bind + ' is already in use');
+       process.exit(1);
+       break;
+     default:
+       throw error;
+   }
+ }
+ 
+ /**
+  * Event listener for HTTP server "listening" event.
+  */
+ 
+ function onListening() {
+   var addr = server.address();
+   var bind = typeof addr === 'string'
+     ? 'pipe ' + addr
+     : 'port ' + addr.port;
+   debug('Listening on ' + bind);
+ }
+ 
+ app.use(
+   express.static(path.join(__dirname, "../client/dist"))
+ );
+ 
+ 
+ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then((client)=>{
+ 
+   console.log("Connected to the database");
+   const db = client.db("leaseFinderDB");
+   const users_collection = db.collection('users_collection');
+   const test_collection = db.collection('test_collection');
+ 
+   app.use(async (req, res, next) => {
+     console.log("Server received a request at middleware");
+     users_collection.find({ email:  req.session.email }).toArray().then((users)=>{
+       // console.log("This is from the middleware function", users);
+       if (users[0] === undefined){
+         req.user = -1;
+       }
+       else{
+         req.user = users[0];
+       }
+       // console.log("req.user: ", req.user);
+       next();
+     })
+     .catch(error => {
+       console.error(error);
+       res.send(error);
+     });
+ 
+   });
+ 
+   app.get(["/me", "/api/me"], async (req, res) => { // api call to get current user
+     console.log("Server received a request at ", req.url);
+     // console.log("THIS IS ME:", req.user);
+     if (req.user === -1){
+       res.status(200);
+       res.json({"message":"No user logged in!"});
+     }
+     else{
+       res.status(200);
+       res.json(req.user);
+     }
+ 
+   });
+ 
+   app.delete(["/api/google-logout", "/google-logout"], async (req, res) => {
+     console.log("Server received a request at ", req.url);
+     if (req.user === -1){
+       res.status(200);
+       res.json({"message":"No user logged in!"});
+     }
+     else{
+       await req.session.destroy();
+       res.status(200);
+       res.json({
+         message: "Logged out successfully"
+       });
+     }
+   });
+ 
+ 
+   app.post(["/store_id_token", "/api/store_id_token"], async (req, res) => {
+ 
+     console.log("Server recieved a request at ", req.url);
+ 
+     const { token }  = req.body;
+     const client = new OAuth2Client(process.env.CLIENT_ID);
+     const ticket = await client.verifyIdToken({
+       idToken: token,
+       audience: process.env.CLIENT_ID,
+       plugin_name:'MessagingApp'
+     });
+     const { name, email, picture } = ticket.getPayload();
+ 
+     let to_update = {name, email, picture};
+ 
+     const user = await users_collection.replaceOne({"email":email}, to_update, {upsert:true}); // using email as the unique identifier
+ 
+     req.session.email = email; // since email is the only unique identifier
+ 
+     console.log("req.session.email:", req.session.email);
+ 
+     res.status(201);
+     res.json(user);
+   });
+ 
+ 
+ 
+   app.post(["/demo_db_entry", "/api/demo_db_entry"], (request, response)=>{
+     console.log("Server recieved a request at ", request.url);
+ 
+     console.log(request.body);
+ 
+     test_collection.insertOne(request.body).then((result)=>{
+       console.log(result);
+       response.send(result);
+     }).catch((error)=>{
+       console.error(error);
+       response.send(error);
+     });
+ 
+   });
+ 
+   app.get(["/sampleCall", "/api/sampleCall"], (request, response)=>{
+     console.log("Got request at: " + request.url);
+     response.send({message: "Hi client!"});
+   });
+ 
+   app.get("*", (req, res) => {
+     res.sendFile(
+       path.join(__dirname, "../client/dist/index.html")
+     );
+   });
+ 
+ }).catch((error)=>{ // CATCH BLOCK FOR MONGO CONNECTION
+   console.error(error);
+ });
+ 
+ 

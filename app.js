@@ -20,7 +20,7 @@ app.use(cookieParser());
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
-app.get("/reply_frontend", function(req, res, next){
+app.get(["/reply_frontend", "/api/reply_frontend"], function(req, res, next){
     res.send({message: "sup frontend wyd"});
 });
 
