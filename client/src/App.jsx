@@ -123,7 +123,7 @@ function App() {
                 <GoogleLogin
                   onSuccess={handleLogin}
                   onError={handleLogin}
-                  useOneTap
+                  // useOneTap
                 />
               </GoogleOAuthProvider>
             

@@ -8,6 +8,8 @@
   flex-direction: row;
   padding: 0.5rem;
   border-bottom: 1px solid #eeeeee;
+  justify-content: center;
+  align-items: center;
 }
 
 .user, .date {
@@ -15,26 +17,49 @@
   color: #888888;
   font-size: 16px;
   min-width: 120px;
+  /* background-color: pink; */
 }
 
-/* .user {
-  width: 120px;
-} */
+.user {
+  width: 30%;
+  margin-right: 0px;
+}
+
+.date {
+  margin-left: 0px;
+  display: flex;
+  justify-content: flex-end;
+  /* width: 50px; */
+}
 
 .message {
-  flex-grow: 1;
-  margin-right: 20px;
+  /* flex-grow: 1; */
+  margin-right: -40px;
   font-size: 22px;
+  width: 100%;
+  /* min-width: 200px; */
+  /* background-color: rgb(66,145,152); */
 }
 
 .display-things {
   overflow-wrap: break-word;
-  word-break: break-all;
+  word-break: break-word;
 }
 
 @media only screen and (max-width: 650px) {
   .display-things {
-    font-size: 14px;
-
+    font-size: 12px;
   }
+
+  .message {
+    margin-right: -65px;
+    margin-left: -35px;
+  }
+  .date {
+    margin-left: 0px;
+    display: flex;
+    justify-content: flex-end;
+    width: 50px;
+  }
+  
 }

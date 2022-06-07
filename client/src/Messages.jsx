@@ -39,11 +39,11 @@ function Messages({ socket }) {
           <div
             key={message.id}
             className="message-container"
-            title={`Sent at ${new Date(message.time).toLocaleTimeString()}`}
+            title={`Sent at ${new Date(message.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`}
           >
             <span className="display-things user">{message.value[0] == null ? "Anon E. Moose" : message.value[0]}:</span>
             <span className="display-things message">{message.value[1]}</span>
-            <span className="display-things date">{new Date(message.time).toLocaleTimeString()}</span>
+            <span className="display-things date">{new Date(message.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
           </div>
         ))
       }
