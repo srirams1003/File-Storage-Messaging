@@ -1,5 +1,4 @@
 .message-list {
-  /* max-width: 500px; */
   width: 100%;
 }
 
@@ -17,7 +16,6 @@
   color: #888888;
   font-size: 16px;
   min-width: 120px;
-  /* background-color: pink; */
 }
 
 .user {
@@ -29,16 +27,12 @@
   margin-left: 0px;
   display: flex;
   justify-content: flex-end;
-  /* width: 50px; */
 }
 
 .message {
-  /* flex-grow: 1; */
   margin-right: -20px;
-  font-size: 22px;
+  font-size: 18px;
   width: 100%;
-  /* min-width: 200px; */
-  /* background-color: rgb(66,145,152); */
 }
 
 .display-things {

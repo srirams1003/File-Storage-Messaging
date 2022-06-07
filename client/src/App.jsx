@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import './App.css';
 import io from 'socket.io-client';
 import Messages from './Messages';
@@ -66,12 +66,28 @@ function App() {
   const [data, setData] = React.useState(null);
   const [name, setName] = useState(null);
 
-  React.useEffect(() => { // making an api call to see who is currently logged in
+  const [socket, setSocket] = useState(null);
+
+  const messagesEndRef = useRef(null);
+  const messagesStartRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+  const scrollToTop = () => { // will use this when i have arrow buttons that always are on the screen to allow users to scroll to the top or the bottom
+    messagesStartRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [data]);
+
+  useEffect(() => { // making an api call to see who is currently logged in
     fetch("/api/me")
         .then((res) => res.json())
         .then((data) => {
           if (data.message === "No user logged in!"){
-            setData(null);
+            setData("");
           }
           else{
             setData(data);
@@ -81,8 +97,7 @@ function App() {
         });
 
   }, []);
-  
-  const [socket, setSocket] = useState(null);
+
 
   useEffect(() => {
     const newSocket = io(`https://${window.location.hostname}`); // CHANGE TO THIS LINE FOR HEROKU
@@ -93,7 +108,8 @@ function App() {
 
   return (
     <main>
-      <div id="top-part">
+      <div id="target-div-top" ref={messagesStartRef}></div>
+      <div id="top-part" >
         <h1>Messaging App</h1>
         <p>My goal is to make this a real-time messaging app.</p>
       </div>
@@ -135,11 +151,12 @@ function App() {
         { socket ? (
           <div className="chat-container">
             <Messages socket={socket}/>
-            <MessageInput socket={socket} />
+            <MessageInput socket={socket}/>
           </div>
         ) : (
           <div>Not Connected</div>
         )}
+        <div id="target-div-bottom" ref={messagesEndRef}></div>
       </div>
     </main>
   )
