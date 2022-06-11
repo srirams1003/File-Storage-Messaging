@@ -7,6 +7,7 @@
  var socketio = require('socket.io');
  const path = require("path");
  var express = require('express');
+ var multer = require('multer');
  
  var app = require('../app');
  var debug = require('debug')('chat-server:server');
@@ -111,19 +112,30 @@
  /**
   * Event listener for HTTP server "listening" event.
   */
+
+  function onListening() {
+    var addr = server.address();
+    var bind = typeof addr === 'string'
+      ? 'pipe ' + addr
+      : 'port ' + addr.port;
+    debug('Listening on ' + bind);
+  }
  
- function onListening() {
-   var addr = server.address();
-   var bind = typeof addr === 'string'
-     ? 'pipe ' + addr
-     : 'port ' + addr.port;
-   debug('Listening on ' + bind);
- }
- 
- app.use(
-   express.static(path.join(__dirname, "../client/dist"))
- );
- 
+  app.use(
+    express.static(path.join(__dirname, "../client/dist"))
+  );
+
+  var storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+    cb(null, 'storageSpace')
+  },
+  filename: function (req, file, cb) {
+    // cb(null, Date.now() + '-' +file.originalname )
+    cb(null, file.originalname)
+  }
+  })
+
+  const upload = multer({ storage: storage }).single('file');
  
  MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then((client)=>{
  
@@ -224,12 +236,51 @@
  
    });
  
-   app.get(["/sampleCall", "/api/sampleCall"], (request, response)=>{
-     console.log("Got request at: " + request.url);
-     response.send({message: "Hi client!"});
-   });
+    app.get(["/sampleCall", "/api/sampleCall"], (request, response)=>{
+      console.log("Got request at: " + request.url);
+      response.send({message: "Hi client!"});
+    });
+
+
+    app.post(["/uploadFile", "/api/uploadFile"], async (req, res) => {
+      console.log("Server recieved a request at ", req.url);
+
+      upload(req, res, function (err) {
+          console.log("req.file:", req.file);
+            if (err instanceof multer.MulterError) {
+                return res.status(500).json(err)
+            } else if (err) {
+                return res.status(500).json(err)
+            }
+            else{
+              return res.status(200).send(req.file)
+            }
+      })
+
+
+
+      // // const { token }  = req.body;
+      // // const client = new OAuth2Client(process.env.CLIENT_ID);
+      // // const ticket = await client.verifyIdToken({
+      // //   idToken: token,
+      // //   audience: process.env.CLIENT_ID,
+      // //   plugin_name:'MessagingApp' 
+      // // });
+      // // const { name, email, picture } = ticket.getPayload();
+
+      // // let to_update = {name, email, picture};
+
+      // // const user = await users_collection.replaceOne({"email":email}, to_update, {upsert:true}); // using email as the unique identifier
+
+      // // req.session.email = email; // since email is the only unique identifier
+
+      // // console.log("req.session.email:", req.session.email);
+
+
+
+    });
  
-   app.get("*", (req, res) => {
+   app.get(["*", "/api/*"], (req, res) => {
      res.sendFile(
        path.join(__dirname, "../client/dist/index.html")
      );
