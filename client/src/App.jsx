@@ -5,7 +5,7 @@ import Messages from './Messages';
 import MessageInput from './MessageInput';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { GoogleLogin } from '@react-oauth/google';
-
+import {Buffer} from 'buffer';
 
 const handleLogin = async googleData => {
   console.log("googleData:", googleData);
@@ -217,14 +217,64 @@ function FileStorageApp() {
     };
 
     fetch("/api/uploadFile", params)
-        // .then((res) => res.json())
+        .then((res) => res.json())
         .then((data) => {
           console.log("data from call inside app:", data);
-        });
+        })
+        .catch((err) => {
+          console.log("err:", err);
+        })
+  };  
+
+  const getFiles = () => {
+
+    let params = {
+      method: "GET"
+    };
+
+    fetch("/api/getAllFiles", params)
+        .then((res) => res.json())
+        .then((data) => {
+          // let base64ToString = Buffer.from(data[0].file, "base64").toString("hex");
+          // console.log(base64ToString);
+          // base64ToString = JSON.parse(base64ToString);
+          console.log("All files:", data);
+
+          let returnArray = [];
+          for (let i = 0; i < data.length; i++){
+            returnArray.push({filedata: data[i].file, filename: data[i].name})
+          }
+          return returnArray;
+        })
+        .then((objArr)=>{
+          console.log("bodyObj:", objArr);
+
+          for (let i = 0; i < objArr.length; i++){
+            let params = {
+              method: "POST",
+              body: JSON.stringify(objArr[i]),
+               headers: {
+                "Content-Type": "application/json"
+              }
+            };
+  
+            fetch("/api/storeFile", params)
+              .then((res) => res.json())
+              .then((data) => {
+                console.log("response for syncing files:", data);
+              })
+              .catch((err) => {
+                console.log("err:", err);
+              })
+          }
+        })
+        .catch((err) => {
+          console.log("err:", err);
+        })
   };  
 
 
-  useEffect(() => { // making an api call to see who is currently logged in
+  useEffect(() => { // making an api call to see who is currently logged in // RUNS ONLY ON INITIAL RENDER
     fetch("/api/me")
         .then((res) => res.json())
         .then((data) => {
@@ -273,6 +323,7 @@ function FileStorageApp() {
                       <p style={{fontSize: "14px"}}>{selectedFile.name}</p>
                     </div>
                     { isFilePicked ? <button onClick={uploadFile}>Upload File</button> : []}
+                    <button onClick={getFiles}>Get All Files</button>
                   </div>
                 </div>
             ) : (

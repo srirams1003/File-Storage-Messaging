@@ -9,7 +9,7 @@ var usersRouter = require('./routes/users');
 
 var app = express();
 app.use(cors()); // add this line
-app.use(express.json());
+// app.use(express.json());
 
 app.use(logger('dev'));
 app.use(express.json({ limit: '50mb'}));
