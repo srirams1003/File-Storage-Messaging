@@ -68,6 +68,23 @@ main {
     display: flex;
 }
 
+img {
+    height: 100px;
+    width: 100px;
+}
+
+#fileUploadContainer {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* causes the "No file chosen" thingy to be gone */
+input[type='file'] {
+    color: transparent; 
+}
+
 @media only screen and (max-width: 650px) {
     main {
         font-size: 12px;

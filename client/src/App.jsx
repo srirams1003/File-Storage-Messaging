@@ -55,13 +55,12 @@ async function identifyCurrentUser(){
 
   const data = await res.json();
   console.log(data);
-
   return data;
 }
 
 
 
-function App() {
+function MessagingApp() {
 
   const [data, setData] = React.useState(null);
   const [name, setName] = useState(null);
@@ -100,8 +99,8 @@ function App() {
 
 
   useEffect(() => {
-    const newSocket = io(`https://${window.location.hostname}`); // CHANGE TO THIS LINE FOR HEROKU
-    // const newSocket = io(`http://${window.location.hostname}:6005`); // FOR LOCAL
+    // const newSocket = io(`https://${window.location.hostname}`); // CHANGE TO THIS LINE FOR HEROKU
+    const newSocket = io(`http://${window.location.hostname}:6005`); // FOR LOCAL
     setSocket(newSocket);
     return () => newSocket.close();
   }, [setSocket, name]);
@@ -163,4 +162,187 @@ function App() {
 
 }
 
+function ImageDisplayApp(){
+  return (
+  <div className="App">
+    <img src={"src/favicon.svg"}/>
+  </div>
+  )
+}
+
+
+function FileStorageApp() {
+
+  const [data, setData] = React.useState(null);
+  const [name, setName] = useState(null);
+
+  const [selectedFile, setSelectedFile] = useState({name: "No file chosen"});
+	const [isFilePicked, setIsFilePicked] = useState(false);
+
+	const changeHandler = (event) => {
+    if (event.target.files[0] != undefined) {
+      if (event.target.files[0].size > 8000000){
+        alert("Please pick a file smaller than 8 MB :(");
+        setIsFilePicked(false);
+        setSelectedFile({name: "No file chosen"});
+      }
+      else{
+        setIsFilePicked(true);
+        setSelectedFile(event.target.files[0]);
+      }
+    }
+    else{
+      setSelectedFile({name: "No file chosen"});
+      setIsFilePicked(false);
+    }
+	};
+
+  const uploadFile = () => {
+    console.log("File about to be uploaded!");
+    console.log(selectedFile);
+
+    // let postObj = {fileName: selectedFile.name, selectedFile: selectedFile};
+
+    const formData = new FormData();
+
+		formData.append('file', selectedFile);
+    // formData.append("name", selectedFile.name);
+
+    let params = {
+      method: "POST",
+      body: formData,
+      // headers: {
+      //   "Content-Type": "multipart/form-data"
+      // }
+    };
+
+    fetch("/api/uploadFile", params)
+        // .then((res) => res.json())
+        .then((data) => {
+          console.log("data from call inside app:", data);
+        });
+  };  
+
+
+  useEffect(() => { // making an api call to see who is currently logged in
+    fetch("/api/me")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.message === "No user logged in!"){
+            setData("");
+          }
+          else{
+            setData(data);
+            setName(data.name);
+          }
+          console.log("data from call inside app:", data);
+        });
+
+  }, []);
+
+
+
+  return (
+    <main>
+      <div id="top-part" >
+        <h1>File Upload App</h1>
+      </div>
+
+      <div className="App">
+        <div id="loginStuff">
+          {
+            4 < 5 ? (
+            // data ? (
+                <div id="loggedInContainer">
+                  <div id="upperLogin">
+                    {/* <h2>Welcome back, {data.name}!</h2>
+                    <h3>You're logged in as {data.email}</h3> */}
+                  </div>
+                  <div id="lowerLogin">
+                    {/* <img src={data.picture} alt={"new"} referrerPolicy={"no-referrer"}/> */}
+
+                    <button onClick={performLogout}>
+                      Log Out
+                    </button>
+
+                  </div>
+                  <div id="fileUploadContainer">
+                    <h3>Please upload a .txt file less than 8 MB in size:</h3>
+                    <div style={{ display: 'flex', flexDirection: "column", justifyContent: 'flex-start', alignItems: 'center'}}>
+                      <input type="file" accept=".txt, .pdf, .jpg" name="file" onChange={changeHandler}/>
+                      <p style={{fontSize: "14px"}}>{selectedFile.name}</p>
+                    </div>
+                    { isFilePicked ? <button onClick={uploadFile}>Upload File</button> : []}
+                  </div>
+                </div>
+            ) : (
+              <GoogleOAuthProvider clientId={import.meta.env.VITE_MESSAGINGAPP_CLIENT_ID}>
+                <GoogleLogin
+                  onSuccess={handleLogin}
+                  onError={handleLogin}
+                  // useOneTap
+                />
+              </GoogleOAuthProvider>
+            
+            )
+          }
+
+        </div>
+      </div>
+    </main>
+  )
+
+}
+
+
+function App(){
+
+  return (
+    <div>
+      <FileStorageApp/>
+      {/* <MessagingApp/> */}
+    </div>
+  )
+    
+}
+
 export default App;
+
+
+
+
+// function App(){ // APP WITH THE TWO ALTERABLE BUTTON CLICK STATES
+
+//   const [a, setA] = useState(14);
+//   const [b, setB] = useState(5);
+
+//   function clickedButton1(){
+//     console.log("Clicked button!");
+//     setA(4);
+//   }
+
+//   function clickedButton2(){
+//     console.log("Clicked button!");
+//     setA(14);
+//   }
+    
+//   if (a > b){
+//     return (
+//       <div>
+//         <input type="button" value="Click me" onClick={clickedButton1}/>
+//         <MessagingApp/>
+//       </div>
+//     )
+//   }
+//   else {
+//     return (
+//       <div>
+//         <input type="button" value="Click me" onClick={clickedButton2}/>
+//         <ImageDisplayApp/>
+//       </div>
+//     )
+//   }
+    
+// }
+
+// export default App;
