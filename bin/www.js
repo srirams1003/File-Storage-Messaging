@@ -11,6 +11,7 @@ var express = require('express');
 var multer = require('multer');
 
 var app = require('../app');
+app.use("/dynfiles", express.static(path.join(__dirname, "../fileStorage")));
 var debug = require('debug')('chat-server:server');
 var http = require('http');
 
@@ -311,7 +312,7 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
     console.log("Server received a request at ", request.url);
 
     file_collection.find({"name":request.body.name}).toArray().then((resp)=>{
-      console.log(resp[0].file);
+      // console.log(resp[0].file);
       response.send(resp[0].file);
     }).catch(error => {
       console.error(error);
@@ -324,7 +325,7 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
     console.log("Server received a request at ", request.url);
 
     file_collection.find().toArray().then((resp)=>{
-      console.log(resp);
+      // console.log(resp);
       response.send(resp);
     }).catch(error => {
       console.error(error);
@@ -347,7 +348,6 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
     fs.writeFileSync("fileStorage/" + req.body.filename, buff);
     res.send({message:"We be gucci"});
   });
-
   
   app.get(["*", "/api/*"], (req, res) => {
     res.sendFile(

@@ -179,6 +179,8 @@ function FileStorageApp() {
   const [selectedFile, setSelectedFile] = useState({name: "No file chosen"});
 	const [isFilePicked, setIsFilePicked] = useState(false);
 
+  const [files, setFiles] = useState([]);
+
 	const changeHandler = (event) => {
     if (event.target.files[0] != undefined) {
       if (event.target.files[0].size > 8000000){
@@ -224,9 +226,17 @@ function FileStorageApp() {
         .catch((err) => {
           console.log("err:", err);
         })
+    alert("File uploaded successfully!");
+    setSelectedFile({name: "No file chosen"});
+    setIsFilePicked(false);
+
   };  
 
   const getFiles = () => {
+
+    const openFile = (filename) => {
+      window.open("/api/dynfiles/" + filename);
+    };
 
     let params = {
       method: "GET"
@@ -248,6 +258,15 @@ function FileStorageApp() {
         })
         .then((objArr)=>{
           console.log("bodyObj:", objArr);
+          let curFiles = [];
+          let count = 0;
+          objArr.map((obj)=>{
+            curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(obj.filename)}}>{obj.filename}</li>);
+            count ++;
+          });
+
+          console.log("curFiles:", curFiles);
+          setFiles(curFiles);
 
           for (let i = 0; i < objArr.length; i++){
             let params = {
@@ -261,7 +280,7 @@ function FileStorageApp() {
             fetch("/api/storeFile", params)
               .then((res) => res.json())
               .then((data) => {
-                console.log("response for syncing files:", data);
+                // console.log("response for syncing files:", data);
               })
               .catch((err) => {
                 console.log("err:", err);
@@ -301,15 +320,15 @@ function FileStorageApp() {
       <div className="App">
         <div id="loginStuff">
           {
-            4 < 5 ? (
-            // data ? (
+            // 4 < 5 ? (
+            data ? (
                 <div id="loggedInContainer">
                   <div id="upperLogin">
-                    {/* <h2>Welcome back, {data.name}!</h2>
-                    <h3>You're logged in as {data.email}</h3> */}
+                    <h2>Welcome back, {data.name}!</h2>
+                    <h3>You're logged in as {data.email}</h3>
                   </div>
                   <div id="lowerLogin">
-                    {/* <img src={data.picture} alt={"new"} referrerPolicy={"no-referrer"}/> */}
+                    <img src={data.picture} alt={"new"} referrerPolicy={"no-referrer"}/>
 
                     <button onClick={performLogout}>
                       Log Out
@@ -317,13 +336,14 @@ function FileStorageApp() {
 
                   </div>
                   <div id="fileUploadContainer">
-                    <h3>Please upload a .txt file less than 8 MB in size:</h3>
+                    <h3>Please upload a .txt, .jpg, .png, or .pdf file less than 8 MB in size:</h3>
                     <div style={{ display: 'flex', flexDirection: "column", justifyContent: 'flex-start', alignItems: 'center'}}>
-                      <input type="file" accept=".txt, .pdf, .jpg" name="file" onChange={changeHandler}/>
+                      <input type="file" accept=".txt, .pdf, .jpg," name="file" onChange={changeHandler}/>
                       <p style={{fontSize: "14px"}}>{selectedFile.name}</p>
                     </div>
                     { isFilePicked ? <button onClick={uploadFile}>Upload File</button> : []}
                     <button onClick={getFiles}>Get All Files</button>
+                    {files.length > 0 ? <ul style={{color:'orange'}}>{files}</ul> : "No data yet"}
                   </div>
                 </div>
             ) : (
