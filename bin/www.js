@@ -12,6 +12,7 @@ var multer = require('multer');
 
 var app = require('../app');
 app.use("/dynfiles", express.static(path.join(__dirname, "../fileStorage")));
+app.use("/api/dynfiles", express.static(path.join(__dirname, "../fileStorage")));
 var debug = require('debug')('chat-server:server');
 var http = require('http');
 
@@ -24,9 +25,10 @@ const MongoClient = require('mongodb').MongoClient;
 const { OAuth2Client } = require('google-auth-library');
 
 const {v4 : uuidv4} = require('uuid');
+fs.rmSync("fileStorage/", { recursive: true, force: true }); // deletes entire fileStorage dir upon server restart for certain reasons the developer knows about
 
 let mongodb_connection_string = process.env.MONGO_CONNECTION_STRING; // saving as a permanent environment variable for security
-app.use(session({
+app.use(session({ 
     secret: uuidv4(), // use UUIDs for session secrets?
     resave: true,
     saveUninitialized: true,
@@ -129,11 +131,21 @@ app.use(
 
 var storage = multer.diskStorage({
   destination: function (req, file, cb) {
-  cb(null, 'storageSpace')
+    console.log("req.session.email from multer:", req.session.email);
+    let subdirName = req.session.email;
+    let re = /[a-zA-Z0-9_-]+/g;
+    subdirName = (subdirName.match(re) || []).join('');
+    console.log("subdirName from multer:", subdirName);
+
+    let subDirPath = 'storageSpace/' + subdirName;
+    if (!fs.existsSync(subDirPath)){
+      fs.mkdirSync(subDirPath, { recursive: true });
+    }
+    cb(null, subDirPath);
 },
-filename: function (req, file, cb) {
-  // cb(null, Date.now() + '-' +file.originalname )
-  cb(null, file.originalname)
+  filename: function (req, file, cb) {
+    // cb(null, Date.now() + '-' +file.originalname )
+    cb(null, file.originalname)
 }
 })
 
@@ -152,19 +164,6 @@ mongoose.connect(mongodb_connection_string).then(() => {
       console.log('Could not connect Mongoose to database : ' + error)
     }
 );
-
-
-let fileSchema = new Schema({
-  name: String,
-  desc: String,
-  file:{
-    data: Buffer,
-    contentType: String
-  }
-});
-
-const UpFile = mongoose.model('UpFile', fileSchema);
-
 
 
 MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then((client)=>{
@@ -216,7 +215,11 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
       res.json({"message":"No user logged in!"});
     }
     else{
-      await req.session.destroy();
+      let subdirName = req.session.email;
+      let re = /[a-zA-Z0-9_-]+/g;
+      subdirName = (subdirName.match(re) || []).join('');
+      fs.rmSync("fileStorage/" + subdirName, { recursive: true, force: true }); // deletes entire subdir
+      req.session.destroy();
       res.status(200);
       res.json({
         message: "Logged out successfully"
@@ -278,25 +281,28 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
 
     upload(req, res, function (err) {
       try {
+        let subdirName = req.session.email;
+        let re = /[a-zA-Z0-9_-]+/g;
+        subdirName = (subdirName.match(re) || []).join('');
+
         var file = fs.readFileSync(req.file.path);
         // var encoded_file = file.toString('base64');
         var final_file = {
             name: req.file.originalname,
             contentType:req.file.mimetype,
-            // file: Buffer.from(encoded_file,'base64')
-            // file: Buffer.from(file),
+            owner: subdirName,
             file: file,
             size: req.file.size
         };
 
-
         file_collection.insertOne(final_file).then((result)=>{
           console.log(result);
           res.json(result);
-          fs.unlinkSync("storageSpace/" + final_file.name);
+          // fs.unlinkSync("storageSpace/" + subdirName + "/" + final_file.name); // to delete single file
+          fs.rmSync("storageSpace/" + subdirName, { recursive: true, force: true }); // deletes entire subdir
         }).catch((error)=>{
           console.error(error);
-          res.json(error);
+          res.status(500).json(err)
         });
   
         console.log("req.file:", req.file);
@@ -308,23 +314,14 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
 
   });
 
-  app.post(["/get_file_by_name", "/api/get_file_by_name"], (request, response)=>{
-    console.log("Server received a request at ", request.url);
-
-    file_collection.find({"name":request.body.name}).toArray().then((resp)=>{
-      // console.log(resp[0].file);
-      response.send(resp[0].file);
-    }).catch(error => {
-      console.error(error);
-      response.send(error);
-    });
-
-  });
-
   app.get(["/api/getAllFiles", "/getAllFiles"], (request, response)=>{
     console.log("Server received a request at ", request.url);
 
-    file_collection.find().toArray().then((resp)=>{
+    let subdirName = request.session.email;
+    let re = /[a-zA-Z0-9_-]+/g;
+    subdirName = (subdirName.match(re) || []).join('');
+
+    file_collection.find({owner:subdirName}).toArray().then((resp)=>{
       // console.log(resp);
       response.send(resp);
     }).catch(error => {
@@ -336,16 +333,18 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
 
   app.post(["/api/storeFile", "/storeFile"], (req, res)=>{
     console.log("Server received a request at ", req.url);
-    // console.log(req.body);
 
-    let dir = './fileStorage';
+    let subdirName = req.session.email;
+    let re = /[a-zA-Z0-9_-]+/g;
+    subdirName = (subdirName.match(re) || []).join('');
+    let dir = './fileStorage/' + subdirName;
 
     if (!fs.existsSync(dir)){
       fs.mkdirSync(dir, { recursive: true });
     }
 
     let buff = new Buffer.from(req.body.filedata, 'base64');
-    fs.writeFileSync("fileStorage/" + req.body.filename, buff);
+    fs.writeFileSync(dir + '/' + req.body.filename, buff);
     res.send({message:"We be gucci"});
   });
   

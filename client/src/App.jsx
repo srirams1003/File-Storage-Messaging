@@ -5,7 +5,6 @@ import Messages from './Messages';
 import MessageInput from './MessageInput';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { GoogleLogin } from '@react-oauth/google';
-import {Buffer} from 'buffer';
 
 const handleLogin = async googleData => {
   console.log("googleData:", googleData);
@@ -179,6 +178,8 @@ function FileStorageApp() {
   const [selectedFile, setSelectedFile] = useState({name: "No file chosen"});
 	const [isFilePicked, setIsFilePicked] = useState(false);
 
+  const [wasUploaded, setWasUploaded] = useState(0);
+
   const [files, setFiles] = useState([]);
 
 	const changeHandler = (event) => {
@@ -203,19 +204,13 @@ function FileStorageApp() {
     console.log("File about to be uploaded!");
     console.log(selectedFile);
 
-    // let postObj = {fileName: selectedFile.name, selectedFile: selectedFile};
-
     const formData = new FormData();
 
 		formData.append('file', selectedFile);
-    // formData.append("name", selectedFile.name);
 
     let params = {
       method: "POST",
-      body: formData,
-      // headers: {
-      //   "Content-Type": "multipart/form-data"
-      // }
+      body: formData
     };
 
     fetch("/api/uploadFile", params)
@@ -229,67 +224,73 @@ function FileStorageApp() {
     alert("File uploaded successfully!");
     setSelectedFile({name: "No file chosen"});
     setIsFilePicked(false);
+    let count = wasUploaded;
+    count += 1;
+    setWasUploaded(count);
 
   };  
 
   const getFiles = () => {
 
-    const openFile = (filename) => {
-      window.open("/api/dynfiles/" + filename);
-    };
-
-    let params = {
-      method: "GET"
-    };
-
-    fetch("/api/getAllFiles", params)
-        .then((res) => res.json())
-        .then((data) => {
-          // let base64ToString = Buffer.from(data[0].file, "base64").toString("hex");
-          // console.log(base64ToString);
-          // base64ToString = JSON.parse(base64ToString);
-          console.log("All files:", data);
-
-          let returnArray = [];
-          for (let i = 0; i < data.length; i++){
-            returnArray.push({filedata: data[i].file, filename: data[i].name})
-          }
-          return returnArray;
-        })
-        .then((objArr)=>{
-          console.log("bodyObj:", objArr);
-          let curFiles = [];
-          let count = 0;
-          objArr.map((obj)=>{
-            curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(obj.filename)}}>{obj.filename}</li>);
-            count ++;
-          });
-
-          console.log("curFiles:", curFiles);
-          setFiles(curFiles);
-
-          for (let i = 0; i < objArr.length; i++){
-            let params = {
-              method: "POST",
-              body: JSON.stringify(objArr[i]),
-               headers: {
-                "Content-Type": "application/json"
-              }
-            };
+    if (data) {
+      const openFile = (filename) => {
+        let subdirName = data.email;
+        let re = /[a-zA-Z0-9_-]+/g;
+        subdirName = (subdirName.match(re) || []).join('');
   
-            fetch("/api/storeFile", params)
-              .then((res) => res.json())
-              .then((data) => {
-                // console.log("response for syncing files:", data);
-              })
-              .catch((err) => {
-                console.log("err:", err);
-              })
-          }
-        })
-        .catch((err) => {
-          console.log("err:", err);
-        })
+        window.open("/api/dynfiles/" + subdirName + "/" + filename);
+      };
+  
+      let params = {
+        method: "GET"
+      };
+  
+      fetch("/api/getAllFiles", params)
+          .then((res) => res.json())
+          .then((data) => {
+            console.log("All files:", data);
+  
+            let returnArray = [];
+            for (let i = 0; i < data.length; i++){
+              returnArray.push({filedata: data[i].file, filename: data[i].name})
+            }
+            return returnArray;
+          })
+          .then((objArr)=>{
+            console.log("bodyObj:", objArr);
+            let curFiles = [];
+            let count = 0;
+            objArr.map((obj)=>{
+              curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(obj.filename)}}>{obj.filename}</li>);
+              count ++;
+            });
+  
+            console.log("curFiles:", curFiles);
+            setFiles(curFiles);
+  
+            for (let i = 0; i < objArr.length; i++){
+              let params = {
+                method: "POST",
+                body: JSON.stringify(objArr[i]),
+                 headers: {
+                  "Content-Type": "application/json"
+                }
+              };
+    
+              fetch("/api/storeFile", params)
+                .then((res) => res.json())
+                .then((data) => {
+                  // console.log("response for syncing files:", data);
+                })
+                .catch((err) => {
+                  console.log("err:", err);
+                })
+            }
+          })
+          .catch((err) => {
+            console.log("err:", err);
+          })   
+    }
   };  
 
 
@@ -308,6 +309,8 @@ function FileStorageApp() {
         });
 
   }, []);
+
+  useEffect(getFiles, [wasUploaded, data]);
 
 
 
@@ -338,12 +341,12 @@ function FileStorageApp() {
                   <div id="fileUploadContainer">
                     <h3>Please upload a .txt, .jpg, .png, or .pdf file less than 8 MB in size:</h3>
                     <div style={{ display: 'flex', flexDirection: "column", justifyContent: 'flex-start', alignItems: 'center'}}>
-                      <input type="file" accept=".txt, .pdf, .jpg," name="file" onChange={changeHandler}/>
+                      <input type="file" accept=".txt, .pdf, .jpg, .png" name="file" onChange={changeHandler}/>
                       <p style={{fontSize: "14px"}}>{selectedFile.name}</p>
                     </div>
                     { isFilePicked ? <button onClick={uploadFile}>Upload File</button> : []}
-                    <button onClick={getFiles}>Get All Files</button>
-                    {files.length > 0 ? <ul style={{color:'orange'}}>{files}</ul> : "No data yet"}
+                    {/* <button onClick={getFiles}>Get All Files</button> */}
+                    {files.length > 0 ? <ol style={{color:'orange'}}>{files}</ol> : "Loading your files..."}
                   </div>
                 </div>
             ) : (
@@ -362,58 +365,57 @@ function FileStorageApp() {
       </div>
     </main>
   )
-
 }
 
 
-function App(){
+// function App(){
 
-  return (
-    <div>
-      <FileStorageApp/>
-      {/* <MessagingApp/> */}
-    </div>
-  )
-    
-}
-
-export default App;
-
-
-
-
-// function App(){ // APP WITH THE TWO ALTERABLE BUTTON CLICK STATES
-
-//   const [a, setA] = useState(14);
-//   const [b, setB] = useState(5);
-
-//   function clickedButton1(){
-//     console.log("Clicked button!");
-//     setA(4);
-//   }
-
-//   function clickedButton2(){
-//     console.log("Clicked button!");
-//     setA(14);
-//   }
-    
-//   if (a > b){
-//     return (
-//       <div>
-//         <input type="button" value="Click me" onClick={clickedButton1}/>
-//         <MessagingApp/>
-//       </div>
-//     )
-//   }
-//   else {
-//     return (
-//       <div>
-//         <input type="button" value="Click me" onClick={clickedButton2}/>
-//         <ImageDisplayApp/>
-//       </div>
-//     )
-//   }
+//   return (
+//     <div>
+//       <FileStorageApp/>
+//       {/* <MessagingApp/> */}
+//     </div>
+//   )
     
 // }
 
 // export default App;
+
+
+
+
+function App(){ // APP WITH THE TWO ALTERABLE BUTTON CLICK STATES
+
+  const [a, setA] = useState(14);
+  const [b, setB] = useState(5);
+
+  function clickedButton1(){
+    console.log("Clicked button!");
+    setA(14);
+  }
+
+  function clickedButton2(){
+    console.log("Clicked button!");
+    setA(4);
+  }
+    
+  if (a < b){
+    return (
+      <div>
+        <input type="button" value="Switch to File Storage App" onClick={clickedButton1}/>
+        <MessagingApp/>
+      </div>
+    )
+  }
+  else {
+    return (
+      <div>
+        <input type="button" value="Switch to Messaging App" onClick={clickedButton2}/>
+        <FileStorageApp/>
+      </div>
+    )
+  }
+    
+}
+
+export default App;
