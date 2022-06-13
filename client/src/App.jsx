@@ -98,8 +98,8 @@ function MessagingApp() {
 
 
   useEffect(() => {
-    const newSocket = io(`https://${window.location.hostname}`); // CHANGE TO THIS LINE FOR HEROKU
-    // const newSocket = io(`http://${window.location.hostname}:6005`); // FOR LOCAL
+    // const newSocket = io(`https://${window.location.hostname}`); // CHANGE TO THIS LINE FOR HEROKU
+    const newSocket = io(`http://${window.location.hostname}:6005`); // FOR LOCAL
     setSocket(newSocket);
     return () => newSocket.close();
   }, [setSocket, name]);
