@@ -294,6 +294,10 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
             size: req.file.size
         };
 
+        let dir = './fileStorage/' + subdirName;
+
+        fs.writeFileSync(dir + '/' + req.file.originalname, file);
+
         file_collection.insertOne(final_file).then((result)=>{
           console.log(result);
           res.json(result);
@@ -320,52 +324,83 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
     let re = /[a-zA-Z0-9_-]+/g;
     subdirName = (subdirName.match(re) || []).join('');
 
-    file_collection.find({owner:subdirName}).toArray()
-      .then((data)=>{
-        let objArr = [];
-        for (let i = 0; i < data.length; i++){
-          objArr.push({filedata: data[i].file, filename: data[i].name})
+    let dir = './fileStorage/' + subdirName;
+
+    if (fs.existsSync(dir)){
+      fs.readdir(dir, (err, files) => {
+        if (err) { //handling errors
+          console.log('Unable to scan directory: ' + err);
+          res.json('Unable to scan directory: ' + err);
         }
-
-        let dir = './fileStorage/' + subdirName;
-
-        if (!fs.existsSync(dir)){
-          fs.mkdirSync(dir, { recursive: true });
-        }
-
-        for (let i = 0; i < objArr.length; i++){
-          let bindata = objArr[i].filedata.toString("binary");
-          let hexdata = new Buffer.from(bindata, 'ascii').toString('hex');
-          let buffer = new Buffer.from(hexdata, 'hex');
-          fs.writeFileSync(dir + '/' + objArr[i].filename, buffer);
-        }
-
-        let filenamesArr = [];
-        objArr.map((obj) => {
-          filenamesArr.push(obj.filename);
-        })
-
-        res.json(filenamesArr);
-
-      })
-      .catch(error => {
-        console.error(error);
-        res.json(error);
+        else{ // all good
+          res.json(files);
+        } 
       });
+    }
+    else{
+      file_collection.find({owner:subdirName}).sort({'name': 1}).toArray()
+        .then((data)=>{
+          let objArr = [];
+          for (let i = 0; i < data.length; i++){
+            objArr.push({filedata: data[i].file, filename: data[i].name})
+          }
+
+          let dir = './fileStorage/' + subdirName;
+
+          if (!fs.existsSync(dir)){
+            fs.mkdirSync(dir, { recursive: true });
+          }
+
+          for (let i = 0; i < objArr.length; i++){
+            let bindata = objArr[i].filedata.toString("binary");
+            let hexdata = new Buffer.from(bindata, 'ascii').toString('hex');
+            let buffer = new Buffer.from(hexdata, 'hex');
+            fs.writeFileSync(dir + '/' + objArr[i].filename, buffer);
+          }
+
+          let filenamesArr = [];
+          objArr.map((obj) => {
+            filenamesArr.push(obj.filename);
+          })
+
+          // the three lines below remove any duplicate data entries
+          let s = new Set(filenamesArr);
+          let it = s.values();
+          filenamesArr = Array.from(it);
+
+          res.json(filenamesArr);
+
+        })
+        .catch(error => {
+          console.error(error);
+          res.json(error);
+        });
+    }
 
   });
 
-  app.get(["/api/getFile", "/getFile"], (req, res) => {
+
+  app.get(["/api/getFile/:name", "/getFile/:name"], (req, res) => {
     console.log("Server received a request at:", req.url);
     
-    // console.log("req.query.name:", req.query.name);
-    let subdirName = req.session.email;
-    let re = /[a-zA-Z0-9_-]+/g;
-    subdirName = (subdirName.match(re) || []).join('');
+    console.log("req.params.name:", req.params.name);
 
-    res.sendFile(
-      path.join(__dirname, "../fileStorage/" + subdirName + "/" + req.query.name)
-    );
+    let subdirName = req.session.email;
+    if (subdirName == undefined){
+      res.status(401).send("You need to be authorized to access files!");
+    }
+    else{
+      let re = /[a-zA-Z0-9_-]+/g;
+      subdirName = (subdirName.match(re) || []).join('');
+  
+      let fullPath = path.join(__dirname, "../fileStorage/" + subdirName + "/" + req.params.name);
+  
+      if (fs.existsSync(fullPath)) {
+          res.sendFile(fullPath)
+      } else {
+          res.sendStatus(404);
+      }
+    }
 
   });
 

@@ -180,9 +180,11 @@ function FileStorageApp() {
 
   const [wasUploaded, setWasUploaded] = useState(0);
 
+  const [plainFiles, setPlainFiles] = useState([]);
   const [files, setFiles] = useState([]);
 
 	const changeHandler = (event) => {
+
     if (event.target.files[0] != undefined) {
       if (event.target.files[0].size > 8000000){
         alert("Please pick a file smaller than 8 MB :(");
@@ -202,7 +204,16 @@ function FileStorageApp() {
 
   const uploadFile = () => {
     console.log("File about to be uploaded!");
-    console.log(selectedFile);
+
+    console.log("plainFiles:", plainFiles);
+    console.log("selectedFile:", selectedFile.name);
+
+    if (plainFiles.includes(selectedFile.name)){
+      alert("A file with this name already exists!");
+      setIsFilePicked(false);
+      setSelectedFile({name: "No file chosen"});
+      return ;
+    }
 
     const formData = new FormData();
 
@@ -233,26 +244,7 @@ function FileStorageApp() {
   const getFiles = () => {
 
     if (data) {
-      const openFile = (filename) => {
-        // let subdirName = data.email;
-        // let re = /[a-zA-Z0-9_-]+/g;
-        // subdirName = (subdirName.match(re) || []).join('');
-  
-        // window.open("/api/dynfiles/" + subdirName + "/" + filename);
 
-
-        // let params = {
-        //   method: "POST",
-        //   body: JSON.stringify({filename:filename}),
-        //   headers: {
-        //     "Content-Type": "application/json"
-        //   }
-        // };
-
-        // fetch("/api/getFile", params);
-
-      };
-  
       let params = {
         method: "GET"
       };
@@ -262,14 +254,14 @@ function FileStorageApp() {
           .then((data) => {
             console.log("All files:", data);
 
-            let curFiles = [];
+            setPlainFiles(data);
+
             let count = 0;
-            data.map((filename)=>{
-              curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(filename)}}><a target="_blank" href={`/api/getFile?name=${filename}`} style={{color: "blue", textDecoration: "none"}}>{filename}</a></li>);
-              count ++;
+            let curFiles  = data.map((filename)=>{
+              return (<li key={"filekey"+count++}><a target="_blank" href={`/api/getFile/${filename}`} style={{color: "blue", textDecoration: "none"}}>{filename}</a></li>);
             });
   
-            // console.log("curFiles:", curFiles);
+            console.log("curFiles:", curFiles);
             setFiles(curFiles);
           })
           .catch((err) => {
