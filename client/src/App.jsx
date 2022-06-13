@@ -234,11 +234,23 @@ function FileStorageApp() {
 
     if (data) {
       const openFile = (filename) => {
-        let subdirName = data.email;
-        let re = /[a-zA-Z0-9_-]+/g;
-        subdirName = (subdirName.match(re) || []).join('');
+        // let subdirName = data.email;
+        // let re = /[a-zA-Z0-9_-]+/g;
+        // subdirName = (subdirName.match(re) || []).join('');
   
-        window.open("/api/dynfiles/" + subdirName + "/" + filename);
+        // window.open("/api/dynfiles/" + subdirName + "/" + filename);
+
+
+        // let params = {
+        //   method: "POST",
+        //   body: JSON.stringify({filename:filename}),
+        //   headers: {
+        //     "Content-Type": "application/json"
+        //   }
+        // };
+
+        // fetch("/api/getFile", params);
+
       };
   
       let params = {
@@ -253,11 +265,11 @@ function FileStorageApp() {
             let curFiles = [];
             let count = 0;
             data.map((filename)=>{
-              curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(filename)}}>{filename}</li>);
+              curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(filename)}}><a target="_blank" href={`/api/getFile?name=${filename}`} style={{color: "blue", textDecoration: "none"}}>{filename}</a></li>);
               count ++;
             });
   
-            console.log("curFiles:", curFiles);
+            // console.log("curFiles:", curFiles);
             setFiles(curFiles);
           })
           .catch((err) => {
@@ -283,7 +295,7 @@ function FileStorageApp() {
 
   }, []);
 
-  
+
   useEffect(getFiles, [wasUploaded, data]);
 
 
@@ -319,7 +331,7 @@ function FileStorageApp() {
                     </div>
                     { isFilePicked ? <button onClick={uploadFile}>Upload File</button> : []}
                     {/* <button onClick={getFiles}>Get All Files</button> */}
-                    {files.length > 0 ? <ol style={{color:'orange'}}>{files}</ol> : "Loading your files..."}
+                    {files.length > 0 ? <ol style={{color:'crimson'}}>{files}</ol> : "Loading your files..."}
                   </div>
                 </div>
             ) : (

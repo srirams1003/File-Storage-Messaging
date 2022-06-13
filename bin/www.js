@@ -356,6 +356,20 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
 
   });
 
+  app.get(["/api/getFile", "/getFile"], (req, res) => {
+    console.log("Server received a request at:", req.url);
+    
+    // console.log("req.query.name:", req.query.name);
+    let subdirName = req.session.email;
+    let re = /[a-zA-Z0-9_-]+/g;
+    subdirName = (subdirName.match(re) || []).join('');
+
+    res.sendFile(
+      path.join(__dirname, "../fileStorage/" + subdirName + "/" + req.query.name)
+    );
+
+  });
+
   
   app.get(["*", "/api/*"], (req, res) => {
     res.sendFile(
