@@ -314,39 +314,48 @@ MongoClient.connect(mongodb_connection_string, {useUnifiedTopology: true }).then
 
   });
 
-  app.get(["/api/getAllFiles", "/getAllFiles"], (request, response)=>{
-    console.log("Server received a request at ", request.url);
-
-    let subdirName = request.session.email;
-    let re = /[a-zA-Z0-9_-]+/g;
-    subdirName = (subdirName.match(re) || []).join('');
-
-    file_collection.find({owner:subdirName}).toArray().then((resp)=>{
-      // console.log(resp);
-      response.send(resp);
-    }).catch(error => {
-      console.error(error);
-      response.send(error);
-    });
-
-  });
-
-  app.post(["/api/storeFile", "/storeFile"], (req, res)=>{
+  app.get(["/api/getAllFiles", "/getAllFiles"], (req, res)=>{
     console.log("Server received a request at ", req.url);
 
     let subdirName = req.session.email;
     let re = /[a-zA-Z0-9_-]+/g;
     subdirName = (subdirName.match(re) || []).join('');
-    let dir = './fileStorage/' + subdirName;
 
-    if (!fs.existsSync(dir)){
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    file_collection.find({owner:subdirName}).toArray()
+      .then((data)=>{
+        let objArr = [];
+        for (let i = 0; i < data.length; i++){
+          objArr.push({filedata: data[i].file, filename: data[i].name})
+        }
 
-    let buff = new Buffer.from(req.body.filedata, 'base64');
-    fs.writeFileSync(dir + '/' + req.body.filename, buff);
-    res.send({message:"We be gucci"});
+        let dir = './fileStorage/' + subdirName;
+
+        if (!fs.existsSync(dir)){
+          fs.mkdirSync(dir, { recursive: true });
+        }
+
+        for (let i = 0; i < objArr.length; i++){
+          let bindata = objArr[i].filedata.toString("binary");
+          let hexdata = new Buffer.from(bindata, 'ascii').toString('hex');
+          let buffer = new Buffer.from(hexdata, 'hex');
+          fs.writeFileSync(dir + '/' + objArr[i].filename, buffer);
+        }
+
+        let filenamesArr = [];
+        objArr.map((obj) => {
+          filenamesArr.push(obj.filename);
+        })
+
+        res.json(filenamesArr);
+
+      })
+      .catch(error => {
+        console.error(error);
+        res.json(error);
+      });
+
   });
+
   
   app.get(["*", "/api/*"], (req, res) => {
     res.sendFile(

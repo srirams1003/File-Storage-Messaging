@@ -249,43 +249,16 @@ function FileStorageApp() {
           .then((res) => res.json())
           .then((data) => {
             console.log("All files:", data);
-  
-            let returnArray = [];
-            for (let i = 0; i < data.length; i++){
-              returnArray.push({filedata: data[i].file, filename: data[i].name})
-            }
-            return returnArray;
-          })
-          .then((objArr)=>{
-            console.log("bodyObj:", objArr);
+
             let curFiles = [];
             let count = 0;
-            objArr.map((obj)=>{
-              curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(obj.filename)}}>{obj.filename}</li>);
+            data.map((filename)=>{
+              curFiles.push(<li key={"filekey"+count} onClick={()=>{openFile(filename)}}>{filename}</li>);
               count ++;
             });
   
             console.log("curFiles:", curFiles);
             setFiles(curFiles);
-  
-            for (let i = 0; i < objArr.length; i++){
-              let params = {
-                method: "POST",
-                body: JSON.stringify(objArr[i]),
-                 headers: {
-                  "Content-Type": "application/json"
-                }
-              };
-    
-              fetch("/api/storeFile", params)
-                .then((res) => res.json())
-                .then((data) => {
-                  // console.log("response for syncing files:", data);
-                })
-                .catch((err) => {
-                  console.log("err:", err);
-                })
-            }
           })
           .catch((err) => {
             console.log("err:", err);
@@ -310,8 +283,8 @@ function FileStorageApp() {
 
   }, []);
 
+  
   useEffect(getFiles, [wasUploaded, data]);
-
 
 
   return (
