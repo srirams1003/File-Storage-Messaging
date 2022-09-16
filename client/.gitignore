@@ -1,4 +1,6 @@
 node_modules
+.upm
+*replit*
 .DS_Store
 dist
 dist-ssr
