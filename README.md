@@ -1,7 +1,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-A full-stack app made that allows users to login with Google OAuth 2.0 and upload and access files from anywhere just by logging in. The app also has a feature that uses Socket.io to allow multiple users to chat in real-time, much like an online chat forum. The users can choose to be anonymous, or can choose to log in and have their names show up next to their messages.
+A full-stack app that allows users to login with Google OAuth 2.0 and upload and access files from anywhere just by logging in. The app also has a feature that uses Socket.io to allow multiple users to chat in real-time, much like an online chat forum. The users can choose to be anonymous, or can choose to log in and have their names show up next to their messages.
 
 You can visit this app by visiting its Heroku deployment [here](https://morning-retreat-40248.herokuapp.com/).
 
