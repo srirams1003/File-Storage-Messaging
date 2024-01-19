@@ -108,7 +108,9 @@ function MessagingApp() {
     <main>
       <div id="target-div-top" ref={messagesStartRef}></div>
       <div id="top-part" >
-        <h1>Messaging App</h1>
+          <h1 style={{color: "red"}}>Make Don Pollo Great Again</h1>
+          <h2 style={{color: "blue"}}>Stay tuned for new bludify releases </h2>
+        <h2>Messaging App</h2>
         <p>My goal is to make this a real-time messaging app.</p>
       </div>
 
@@ -294,7 +296,9 @@ function FileStorageApp() {
   return (
     <main>
       <div id="top-part" >
-        <h1>File Upload App</h1>
+          <h1 style={{color: "red"}}>Make Don Pollo Great Again</h1>
+          <h2 style={{color: "blue"}}>Stay tuned for new bludify releases </h2>
+        <h2>File Upload App</h2>
       </div>
 
       <div className="App">
